@@ -8,17 +8,21 @@
 {% if alerts %}
 <div class="mb-4 slide-in">
     {% for a in alerts[:3] %}
-    <div class="alert-card {% if a.alert_type == 'low_attendance' %}warning{% elif a.alert_type == 'backlog_risk' %}danger{% else %}success{% endif %}">
+    <div
+        class="alert-card {% if a.alert_type == 'low_attendance' %}warning{% elif a.alert_type == 'backlog_risk' %}danger{% else %}success{% endif %}">
         <div class="alert-icon">
-            {% if a.alert_type == 'low_attendance' %}<i class="bi bi-exclamation-triangle-fill" style="color:var(--warning)"></i>
+            {% if a.alert_type == 'low_attendance' %}<i class="bi bi-exclamation-triangle-fill"
+                style="color:var(--warning)"></i>
             {% elif a.alert_type == 'backlog_risk' %}<i class="bi bi-x-octagon-fill" style="color:var(--danger)"></i>
             {% else %}<i class="bi bi-info-circle-fill" style="color:var(--info)"></i>{% endif %}
         </div>
         <div class="alert-text">
-            <strong>{% if a.alert_type == 'low_attendance' %}Attendance Warning{% elif a.alert_type == 'backlog_risk' %}Backlog Risk{% else %}Notice{% endif %}</strong>
+            <strong>{% if a.alert_type == 'low_attendance' %}Attendance Warning{% elif a.alert_type == 'backlog_risk'
+                %}Backlog Risk{% else %}Notice{% endif %}</strong>
             {{ a.message }}
         </div>
-        <a href="{{ url_for('mark_alert_read', id=a.id) }}" class="btn btn-sm btn-outline-secondary ms-auto" title="Dismiss"><i class="bi bi-x"></i></a>
+        <a href="{{ url_for('mark_alert_read', id=a.id) }}" class="btn btn-sm btn-outline-secondary ms-auto"
+            title="Dismiss"><i class="bi bi-x"></i></a>
     </div>
     {% endfor %}
 </div>
@@ -49,7 +53,8 @@
     </div>
     <div class="col-md-6 col-xl-3">
         <div class="stat-card">
-            <div class="stat-icon {% if predictions.overall_risk == 'High' %}red{% elif predictions.overall_risk == 'Medium' %}orange{% else %}teal{% endif %}">
+            <div
+                class="stat-icon {% if predictions.overall_risk == 'High' %}red{% elif predictions.overall_risk == 'Medium' %}orange{% else %}teal{% endif %}">
                 <i class="bi bi-shield-exclamation"></i>
             </div>
             <div class="stat-value" style="font-size:1.3rem">{{ predictions.overall_risk }} Risk</div>
@@ -62,13 +67,17 @@
 <div class="row g-4 mb-4">
     <div class="col-lg-8">
         <div class="card-custom slide-in">
-            <div class="card-header"><i class="bi bi-bar-chart-fill me-2" style="color:var(--primary)"></i>Attendance by Subject</div>
-            <div class="card-body"><div style="height:300px"><canvas id="attChart"></canvas></div></div>
+            <div class="card-header"><i class="bi bi-bar-chart-fill me-2" style="color:var(--primary)"></i>Attendance by
+                Subject</div>
+            <div class="card-body">
+                <div style="height:300px"><canvas id="attChart"></canvas></div>
+            </div>
         </div>
     </div>
     <div class="col-lg-4">
         <div class="card-custom slide-in">
-            <div class="card-header"><i class="bi bi-pie-chart-fill me-2" style="color:var(--accent)"></i>Overall Attendance</div>
+            <div class="card-header"><i class="bi bi-pie-chart-fill me-2" style="color:var(--accent)"></i>Overall
+                Attendance</div>
             <div class="card-body">
                 <div style="height:220px"><canvas id="doughnut"></canvas></div>
                 <div class="text-center mt-3">
@@ -109,7 +118,7 @@
         <a href="{{ url_for('parent_predictions') }}" class="text-decoration-none">
             <div class="prediction-card text-center">
                 <i class="bi bi-graph-up-arrow fs-2" style="color:var(--warning)"></i>
-                <h6 class="mt-2 mb-1">ML Predictions</h6>
+                <h6 class="mt-2 mb-1">AL Predictions</h6>
                 <small class="text-muted">AI-powered risk analysis & suggestions</small>
             </div>
         </a>
@@ -128,14 +137,14 @@
 {% block scripts %}
 {% if student and predictions %}
 <script>
-const attData = {{ predictions.subjects | tojson }};
-renderAttendanceChart('attChart', attData.map(s => ({
-    subject: s.name, percentage: s.attendance_pct,
-    attended: s.classes_attended, total: s.total_classes
-})));
-const totalClasses = attData.reduce((a, s) => a + s.total_classes, 0);
-const totalAttended = attData.reduce((a, s) => a + s.classes_attended, 0);
-renderAttendanceDoughnut('doughnut', totalAttended, totalClasses);
+    const attData = {{ predictions.subjects | tojson }};
+    renderAttendanceChart('attChart', attData.map(s => ({
+        subject: s.name, percentage: s.attendance_pct,
+        attended: s.classes_attended, total: s.total_classes
+    })));
+    const totalClasses = attData.reduce((a, s) => a + s.total_classes, 0);
+    const totalAttended = attData.reduce((a, s) => a + s.classes_attended, 0);
+    renderAttendanceDoughnut('doughnut', totalAttended, totalClasses);
 </script>
 {% endif %}
 {% endblock %}
