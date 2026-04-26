@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Reports{% endblock %}
+{% block page_title %}<i class="bi bi-file-earmark-pdf-fill me-2" style="color:var(--primary)"></i>Reports{% endblock %}
+
+{% block content %}
+<div class="card-custom slide-in">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-download me-2" style="color:var(--accent)"></i>Download Student Reports</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table-custom">
+                <thead><tr><th>#</th><th>Student ID</th><th>Name</th><th>Department</th><th>Attendance</th><th>Backlogs</th><th>Download</th></tr></thead>
+                <tbody>
+                {% for s in students %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td><strong>{{ s.student_id }}</strong></td>
+                    <td>{{ s.name }}</td>
+                    <td>{{ s.department }}</td>
+                    <td>
+                        <span class="badge-risk {% if s.overall_attendance >= 75 %}low{% elif s.overall_attendance >= 60 %}medium{% else %}high{% endif %}">
+                            {{ s.overall_attendance }}%
+                        </span>
+                    </td>
+                    <td>{{ s.active_backlogs_count }}</td>
+                    <td>
+                        <a href="{{ url_for('admin_download_report', id=s.id) }}" class="btn btn-sm btn-accent py-1 px-3" target="_blank">
+                            <i class="bi bi-file-pdf me-1"></i>PDF
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if not students %}
+                <tr><td colspan="7" class="text-center text-muted py-4">No students found.</td></tr>
+                {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

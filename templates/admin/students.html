@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Students{% endblock %}
+{% block page_title %}<i class="bi bi-people-fill me-2" style="color:var(--primary)"></i>Students{% endblock %}
+
+{% block content %}
+<div class="card-custom slide-in">
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <span><i class="bi bi-search me-2" style="color:var(--primary)"></i>Student Directory</span>
+        <div class="d-flex gap-3">
+            <form method="GET" class="d-flex gap-2" style="max-width:320px">
+                <input type="text" name="search" class="form-control form-control-sm" placeholder="Search by ID or Name..." value="{{ search }}" style="border-radius:8px">
+                <button type="submit" class="btn btn-sm btn-primary-custom px-3">Search</button>
+            </form>
+            <a href="{{ url_for('admin_add_student') }}" class="btn btn-sm btn-accent d-flex align-items-center">
+                <i class="bi bi-person-plus-fill me-1"></i> Add Student
+            </a>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table-custom">
+                <thead>
+                    <tr><th>#</th><th>Student ID</th><th>Name</th><th>Department</th><th>Semester</th><th>Attendance</th><th>Backlogs</th><th>Actions</th></tr>
+                </thead>
+                <tbody>
+                {% for s in students %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td><strong>{{ s.student_id }}</strong></td>
+                    <td>{{ s.name }}</td>
+                    <td>{{ s.department }}</td>
+                    <td>{{ s.semester }}</td>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="progress-custom" style="width:80px">
+                                <div class="bar {% if s.overall_attendance >= 75 %}green{% elif s.overall_attendance >= 60 %}yellow{% else %}red{% endif %}"
+                                     style="width:{{ s.overall_attendance }}%"></div>
+                            </div>
+                            <small class="fw-semibold">{{ s.overall_attendance }}%</small>
+                        </div>
+                    </td>
+                    <td>
+                        {% if s.active_backlogs_count > 0 %}
+                        <span class="badge-risk high">{{ s.active_backlogs_count }} Active</span>
+                        {% else %}
+                        <span class="badge-risk low">Clear</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{{ url_for('admin_student_detail', id=s.id) }}" class="btn btn-sm btn-primary-custom py-1 px-3">
+                            <i class="bi bi-eye me-1"></i>Details
+                        </a>
+                        <a href="{{ url_for('admin_download_report', id=s.id) }}" class="btn btn-sm btn-accent py-1 px-3">
+                            <i class="bi bi-download me-1"></i>PDF
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if not students %}
+                <tr><td colspan="8" class="text-center text-muted py-4">No students found. <a href="{{ url_for('admin_upload') }}">Upload data</a> to get started.</td></tr>
+                {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

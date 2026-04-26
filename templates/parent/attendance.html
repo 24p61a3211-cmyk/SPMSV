@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Attendance{% endblock %}
+{% block page_title %}<i class="bi bi-calendar-check-fill me-2" style="color:var(--primary)"></i>Attendance Details{% endblock %}
+
+{% block content %}
+<div class="row g-4 mb-4 slide-in">
+    <div class="col-md-6 col-xl-4">
+        <div class="stat-card">
+            <div class="stat-icon teal"><i class="bi bi-graph-up"></i></div>
+            <div class="stat-value">{{ student.overall_attendance }}%</div>
+            <div class="stat-label">Overall Attendance</div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-4">
+        <div class="stat-card">
+            <div class="stat-icon purple"><i class="bi bi-book"></i></div>
+            <div class="stat-value">{{ records|length }}</div>
+            <div class="stat-label">Total Subjects</div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-4">
+        <div class="stat-card">
+            <div class="stat-icon {% if student.overall_attendance >= 75 %}teal{% elif student.overall_attendance >= 60 %}orange{% else %}red{% endif %}">
+                <i class="bi bi-shield-check"></i>
+            </div>
+            <div class="stat-value" style="font-size:1.2rem">{% if student.overall_attendance >= 75 %}Safe{% elif student.overall_attendance >= 60 %}Warning{% else %}Critical{% endif %}</div>
+            <div class="stat-label">Attendance Status</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card-custom slide-in">
+            <div class="card-header"><i class="bi bi-bar-chart-fill me-2" style="color:var(--primary)"></i>Subject-wise Attendance</div>
+            <div class="card-body"><div style="height:340px"><canvas id="attChart"></canvas></div></div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card-custom slide-in">
+            <div class="card-header"><i class="bi bi-pie-chart-fill me-2" style="color:var(--accent)"></i>Overall Split</div>
+            <div class="card-body"><div style="height:250px"><canvas id="doughnut"></canvas></div></div>
+        </div>
+    </div>
+</div>
+
+<div class="card-custom slide-in mt-4">
+    <div class="card-header"><i class="bi bi-table me-2" style="color:var(--primary)"></i>Detailed Breakdown</div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table-custom">
+                <thead><tr><th>Subject</th><th>Type</th><th>Total Classes</th><th>Attended</th><th>Absent</th><th>Percentage</th><th>Status</th></tr></thead>
+                <tbody>
+                {% for r in records %}
+                <tr>
+                    <td><strong>{{ r.subject }}</strong><br><small class="text-muted">{{ r.code }}</small></td>
+                    <td><span class="badge bg-{{ 'primary' if r.type == 'Theory' else 'info' }} bg-opacity-10 text-{{ 'primary' if r.type == 'Theory' else 'info' }}" style="border-radius:6px">{{ r.type }}</span></td>
+                    <td>{{ r.total }}</td>
+                    <td class="text-success fw-semibold">{{ r.attended }}</td>
+                    <td class="text-danger fw-semibold">{{ r.total - r.attended }}</td>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="progress-custom" style="width:80px">
+                                <div class="bar {% if r.percentage >= 75 %}green{% elif r.percentage >= 60 %}yellow{% else %}red{% endif %}"
+                                     style="width:{{ r.percentage }}%"></div>
+                            </div>
+                            <strong>{{ r.percentage }}%</strong>
+                        </div>
+                    </td>
+                    <td>
+                        {% if r.percentage >= 75 %}
+                        <span class="badge-risk low">Safe</span>
+                        {% elif r.percentage >= 60 %}
+                        <span class="badge-risk medium">Warning</span>
+                        {% else %}
+                        <span class="badge-risk high">Critical</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const records = {{ records | tojson }};
+renderAttendanceChart('attChart', records.map(r => ({
+    subject: r.subject, percentage: r.percentage, attended: r.attended, total: r.total
+})));
+const tTotal = records.reduce((a, r) => a + r.total, 0);
+const tAtt = records.reduce((a, r) => a + r.attended, 0);
+renderAttendanceDoughnut('doughnut', tAtt, tTotal);
+</script>
+{% endblock %}

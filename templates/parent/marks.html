@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Marks & Backlogs{% endblock %}
+{% block page_title %}<i class="bi bi-journal-check me-2" style="color:var(--primary)"></i>Marks & Backlogs{% endblock %}
+
+{% block content %}
+<div class="row g-4 mb-4">
+    <div class="col-lg-8">
+        <div class="card-custom slide-in">
+            <div class="card-header"><i class="bi bi-bar-chart-fill me-2" style="color:var(--primary)"></i>Marks Comparison</div>
+            <div class="card-body"><div style="height:320px"><canvas id="marksChart"></canvas></div></div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card-custom slide-in">
+            <div class="card-header"><i class="bi bi-exclamation-octagon-fill me-2" style="color:var(--danger)"></i>Active Backlogs</div>
+            <div class="card-body">
+                {% if backlogs %}
+                {% for b in backlogs %}
+                <div class="alert-card danger">
+                    <div class="alert-icon"><i class="bi bi-x-circle-fill" style="color:var(--danger)"></i></div>
+                    <div class="alert-text">
+                        <strong>{{ b.subject }}</strong>
+                        Semester {{ b.semester }} · <span class="badge-risk high">{{ b.status }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="bi bi-check-circle-fill fs-1" style="color:var(--success)"></i>
+                    <p class="mt-2 mb-0 text-muted">No active backlogs! Great work!</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card-custom slide-in">
+    <div class="card-header"><i class="bi bi-table me-2" style="color:var(--primary)"></i>Detailed Marks</div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table-custom">
+                <thead><tr><th>Subject</th><th>Exam</th><th>Marks Obtained</th><th>Max Marks</th><th>Percentage</th><th>Status</th></tr></thead>
+                <tbody>
+                {% for r in records %}
+                <tr>
+                    <td><strong>{{ r.subject }}</strong></td>
+                    <td>{{ r.exam_type }}</td>
+                    <td class="fw-semibold">{{ r.obtained }}</td>
+                    <td>{{ r.max }}</td>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="progress-custom" style="width:70px">
+                                <div class="bar {% if r.percentage >= 60 %}green{% elif r.percentage >= 40 %}yellow{% else %}red{% endif %}"
+                                     style="width:{{ r.percentage }}%"></div>
+                            </div>
+                            <strong>{{ r.percentage }}%</strong>
+                        </div>
+                    </td>
+                    <td>
+                        {% if r.percentage >= 40 %}
+                        <span class="badge-risk low">Pass</span>
+                        {% else %}
+                        <span class="badge-risk high">Fail</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if not records %}
+                <tr><td colspan="6" class="text-center text-muted py-4">No marks records available.</td></tr>
+                {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const marksData = {{ records | tojson }};
+renderMarksChart('marksChart', marksData);
+</script>
+{% endblock %}

@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}Parent Dashboard{% endblock %}
+{% block page_title %}<i class="bi bi-grid-1x2-fill me-2" style="color:var(--primary)"></i>Dashboard{% endblock %}
+
+{% block content %}
+{% if student %}
+<!-- Alert Banner -->
+{% if alerts %}
+<div class="mb-4 slide-in">
+    {% for a in alerts[:3] %}
+    <div class="alert-card {% if a.alert_type == 'low_attendance' %}warning{% elif a.alert_type == 'backlog_risk' %}danger{% else %}success{% endif %}">
+        <div class="alert-icon">
+            {% if a.alert_type == 'low_attendance' %}<i class="bi bi-exclamation-triangle-fill" style="color:var(--warning)"></i>
+            {% elif a.alert_type == 'backlog_risk' %}<i class="bi bi-x-octagon-fill" style="color:var(--danger)"></i>
+            {% else %}<i class="bi bi-info-circle-fill" style="color:var(--info)"></i>{% endif %}
+        </div>
+        <div class="alert-text">
+            <strong>{% if a.alert_type == 'low_attendance' %}Attendance Warning{% elif a.alert_type == 'backlog_risk' %}Backlog Risk{% else %}Notice{% endif %}</strong>
+            {{ a.message }}
+        </div>
+        <a href="{{ url_for('mark_alert_read', id=a.id) }}" class="btn btn-sm btn-outline-secondary ms-auto" title="Dismiss"><i class="bi bi-x"></i></a>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Stats Row -->
+<div class="row g-4 mb-4 slide-in">
+    <div class="col-md-6 col-xl-3">
+        <div class="stat-card">
+            <div class="stat-icon purple"><i class="bi bi-person-badge"></i></div>
+            <div class="stat-value" style="font-size:1.2rem">{{ student.name }}</div>
+            <div class="stat-label">{{ student.student_id }} · {{ student.department }}</div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+        <div class="stat-card">
+            <div class="stat-icon teal"><i class="bi bi-calendar-check"></i></div>
+            <div class="stat-value">{{ student.overall_attendance }}%</div>
+            <div class="stat-label">Overall Attendance</div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+        <div class="stat-card">
+            <div class="stat-icon orange"><i class="bi bi-journal-x"></i></div>
+            <div class="stat-value">{{ student.active_backlogs_count }}</div>
+            <div class="stat-label">Active Backlogs</div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+        <div class="stat-card">
+            <div class="stat-icon {% if predictions.overall_risk == 'High' %}red{% elif predictions.overall_risk == 'Medium' %}orange{% else %}teal{% endif %}">
+                <i class="bi bi-shield-exclamation"></i>
+            </div>
+            <div class="stat-value" style="font-size:1.3rem">{{ predictions.overall_risk }} Risk</div>
+            <div class="stat-label">Academic Risk Level</div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-8">
+        <div class="card-custom slide-in">
+            <div class="card-header"><i class="bi bi-bar-chart-fill me-2" style="color:var(--primary)"></i>Attendance by Subject</div>
+            <div class="card-body"><div style="height:300px"><canvas id="attChart"></canvas></div></div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card-custom slide-in">
+            <div class="card-header"><i class="bi bi-pie-chart-fill me-2" style="color:var(--accent)"></i>Overall Attendance</div>
+            <div class="card-body">
+                <div style="height:220px"><canvas id="doughnut"></canvas></div>
+                <div class="text-center mt-3">
+                    {% if student.overall_attendance >= 75 %}
+                    <span class="badge-risk low px-3 py-2">Healthy Attendance</span>
+                    {% elif student.overall_attendance >= 60 %}
+                    <span class="badge-risk medium px-3 py-2">Needs Improvement</span>
+                    {% else %}
+                    <span class="badge-risk high px-3 py-2">Critical — Action Needed</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Links -->
+<div class="row g-4">
+    <div class="col-md-4">
+        <a href="{{ url_for('parent_attendance') }}" class="text-decoration-none">
+            <div class="prediction-card text-center">
+                <i class="bi bi-calendar-check-fill fs-2" style="color:var(--primary)"></i>
+                <h6 class="mt-2 mb-1">Detailed Attendance</h6>
+                <small class="text-muted">View subject-wise attendance breakdown</small>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-4">
+        <a href="{{ url_for('parent_marks') }}" class="text-decoration-none">
+            <div class="prediction-card text-center">
+                <i class="bi bi-journal-check fs-2" style="color:var(--accent)"></i>
+                <h6 class="mt-2 mb-1">Marks & Backlogs</h6>
+                <small class="text-muted">View exam results and backlog status</small>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-4">
+        <a href="{{ url_for('parent_predictions') }}" class="text-decoration-none">
+            <div class="prediction-card text-center">
+                <i class="bi bi-graph-up-arrow fs-2" style="color:var(--warning)"></i>
+                <h6 class="mt-2 mb-1">ML Predictions</h6>
+                <small class="text-muted">AI-powered risk analysis & suggestions</small>
+            </div>
+        </a>
+    </div>
+</div>
+
+{% else %}
+<div class="text-center py-5">
+    <i class="bi bi-person-x-fill" style="font-size:4rem;color:var(--text-light)"></i>
+    <h4 class="mt-3">No Student Linked</h4>
+    <p class="text-muted">Please contact the admin to link a student to your account.</p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if student and predictions %}
+<script>
+const attData = {{ predictions.subjects | tojson }};
+renderAttendanceChart('attChart', attData.map(s => ({
+    subject: s.name, percentage: s.attendance_pct,
+    attended: s.classes_attended, total: s.total_classes
+})));
+const totalClasses = attData.reduce((a, s) => a + s.total_classes, 0);
+const totalAttended = attData.reduce((a, s) => a + s.classes_attended, 0);
+renderAttendanceDoughnut('doughnut', totalAttended, totalClasses);
+</script>
+{% endif %}
+{% endblock %}

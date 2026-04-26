@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}{{ student.name }}{% endblock %}
+{% block page_title %}<i class="bi bi-person-badge-fill me-2" style="color:var(--primary)"></i>{{ student.name }}{% endblock %}
+
+{% block content %}
+<!-- Student Info Cards -->
+<div class="row g-4 mb-4 slide-in">
+    <div class="col-md-6 col-xl-3">
+        <div class="stat-card">
+            <div class="stat-icon purple"><i class="bi bi-person-vcard"></i></div>
+            <div class="stat-value" style="font-size:1.3rem">{{ student.student_id }}</div>
+            <div class="stat-label">Student ID</div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+        <div class="stat-card">
+            <div class="stat-icon teal"><i class="bi bi-graph-up"></i></div>
+            <div class="stat-value">{{ student.overall_attendance }}%</div>
+            <div class="stat-label">Overall Attendance</div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+        <div class="stat-card">
+            <div class="stat-icon orange"><i class="bi bi-journal-x"></i></div>
+            <div class="stat-value">{{ student.active_backlogs_count }}</div>
+            <div class="stat-label">Active Backlogs</div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+        <div class="stat-card">
+            <div class="stat-icon {% if predictions.overall_risk == 'High' %}red{% elif predictions.overall_risk == 'Medium' %}orange{% else %}teal{% endif %}">
+                <i class="bi bi-shield-exclamation"></i>
+            </div>
+            <div class="stat-value" style="font-size:1.3rem">{{ predictions.overall_risk }}</div>
+            <div class="stat-label">Risk Level</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Attendance Chart -->
+    <div class="col-lg-8">
+        <div class="card-custom slide-in">
+            <div class="card-header"><i class="bi bi-bar-chart-fill me-2" style="color:var(--primary)"></i>Attendance by Subject</div>
+            <div class="card-body"><div style="height:320px"><canvas id="attChart"></canvas></div></div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card-custom slide-in">
+            <div class="card-header"><i class="bi bi-pie-chart-fill me-2" style="color:var(--accent)"></i>Risk Distribution</div>
+            <div class="card-body"><div style="height:320px"><canvas id="riskChart"></canvas></div></div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Marks Chart -->
+    <div class="col-lg-12">
+        <div class="card-custom slide-in">
+            <div class="card-header"><i class="bi bi-journal-check me-2" style="color:var(--primary)"></i>Marks Comparison</div>
+            <div class="card-body"><div style="height:320px"><canvas id="marksChart"></canvas></div></div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Subject Details -->
+    <div class="col-lg-8">
+        <div class="card-custom slide-in">
+            <div class="card-header"><i class="bi bi-list-check me-2" style="color:var(--primary)"></i>Subject-wise Details</div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table-custom">
+                        <thead><tr><th>Subject</th><th>Attendance</th><th>Risk</th><th>Action Needed</th></tr></thead>
+                        <tbody>
+                        {% for s in predictions.subjects %}
+                        <tr>
+                            <td><strong>{{ s.name }}</strong><br><small class="text-muted">{{ s.code }}</small></td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="progress-custom" style="width:70px">
+                                        <div class="bar {% if s.attendance_pct >= 75 %}green{% elif s.attendance_pct >= 60 %}yellow{% else %}red{% endif %}"
+                                             style="width:{{ s.attendance_pct }}%"></div>
+                                    </div>
+                                    <small>{{ s.attendance_pct }}%</small>
+                                </div>
+                            </td>
+                            <td><span class="badge-risk {{ s.risk|lower }}">{{ s.risk }}</span></td>
+                            <td style="font-size:0.82rem">{{ s.message }}</td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Alerts -->
+    <div class="col-lg-4">
+        <div class="card-custom slide-in mb-3">
+            <div class="card-header"><i class="bi bi-bell-fill me-2" style="color:var(--danger)"></i>Alerts</div>
+            <div class="card-body">
+                {% for a in alerts[:5] %}
+                <div class="alert-card {% if a.alert_type == 'low_attendance' %}warning{% elif a.alert_type == 'backlog_risk' %}danger{% else %}success{% endif %}">
+                    <div class="alert-icon">
+                        {% if a.alert_type == 'low_attendance' %}<i class="bi bi-exclamation-triangle-fill" style="color:var(--warning)"></i>
+                        {% else %}<i class="bi bi-x-octagon-fill" style="color:var(--danger)"></i>{% endif %}
+                    </div>
+                    <div class="alert-text">{{ a.message }}</div>
+                </div>
+                {% endfor %}
+                {% if not alerts %}<p class="text-muted text-center mb-0">No alerts</p>{% endif %}
+            </div>
+        </div>
+        <a href="{{ url_for('admin_download_report', id=student.id) }}" class="btn btn-accent w-100 py-2">
+            <i class="bi bi-file-pdf me-2"></i>Download PDF Report
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const attData = {{ predictions.subjects | tojson }};
+renderAttendanceChart('attChart', attData.map(s => ({
+    subject: s.name, percentage: s.attendance_pct,
+    attended: s.classes_attended, total: s.total_classes
+})));
+renderRiskPie('riskChart', {{ predictions.low_risk_count }}, {{ predictions.medium_risk_count }}, {{ predictions.high_risk_count }});
+
+// Marks chart
+const marksData = [];
+attData.forEach(s => {
+    (s.marks || []).forEach(m => {
+        marksData.push({subject: s.name, exam_type: m.exam_type, obtained: m.obtained, max: m.max, percentage: m.percentage});
+    });
+});
+renderMarksChart('marksChart', marksData);
+</script>
+{% endblock %}

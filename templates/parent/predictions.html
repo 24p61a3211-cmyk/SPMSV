@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}ML Predictions{% endblock %}
+{% block page_title %}<i class="bi bi-graph-up-arrow me-2" style="color:var(--primary)"></i>ML Predictions & Suggestions{% endblock %}
+
+{% block content %}
+<!-- Overall Risk Summary -->
+<div class="row g-4 mb-4 slide-in">
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="stat-icon {% if predictions.overall_risk == 'High' %}red{% elif predictions.overall_risk == 'Medium' %}orange{% else %}teal{% endif %}">
+                <i class="bi bi-shield-exclamation"></i>
+            </div>
+            <div class="stat-value" style="font-size:1.4rem">{{ predictions.overall_risk }}</div>
+            <div class="stat-label">Overall Academic Risk</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="stat-icon {% if predictions.backlog_risk == 'High' %}red{% elif predictions.backlog_risk == 'Medium' %}orange{% else %}teal{% endif %}">
+                <i class="bi bi-journal-x"></i>
+            </div>
+            <div class="stat-value" style="font-size:1.4rem">{{ predictions.backlog_risk }}</div>
+            <div class="stat-label">Backlog Risk ({{ predictions.backlog_count }} active)</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="stat-icon purple"><i class="bi bi-bar-chart-steps"></i></div>
+            <div class="stat-value">{{ predictions.overall_attendance }}%</div>
+            <div class="stat-label">Overall Attendance</div>
+        </div>
+    </div>
+</div>
+
+<!-- Risk Distribution -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-4">
+        <div class="card-custom slide-in">
+            <div class="card-header"><i class="bi bi-pie-chart-fill me-2" style="color:var(--accent)"></i>Risk Distribution</div>
+            <div class="card-body"><div style="height:260px"><canvas id="riskPie"></canvas></div></div>
+        </div>
+    </div>
+    <div class="col-lg-8">
+        <div class="card-custom slide-in">
+            <div class="card-header"><i class="bi bi-lightbulb-fill me-2" style="color:var(--warning)"></i>How It Works</div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="p-3 rounded-3" style="background:rgba(0,212,170,0.08)">
+                            <h6 class="fw-bold" style="color:var(--success)"><i class="bi bi-check-circle me-2"></i>Low Risk</h6>
+                            <small class="text-muted">Attendance ≥ 75%. Student is on track. Keep maintaining regular attendance.</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 rounded-3" style="background:rgba(255,167,38,0.08)">
+                            <h6 class="fw-bold" style="color:var(--warning)"><i class="bi bi-exclamation-triangle me-2"></i>Medium Risk</h6>
+                            <small class="text-muted">Attendance between 60-75%. Improvement needed. Follow the suggestions below.</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 rounded-3" style="background:rgba(255,107,107,0.08)">
+                            <h6 class="fw-bold" style="color:var(--danger)"><i class="bi bi-x-octagon me-2"></i>High Risk</h6>
+                            <small class="text-muted">Attendance below 60%. Immediate action required. Contact the department.</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Per-Subject Predictions -->
+<h5 class="mb-3 slide-in"><i class="bi bi-cpu me-2" style="color:var(--primary)"></i>Subject-wise AI Analysis</h5>
+<div class="row g-4">
+{% for s in predictions.subjects %}
+<div class="col-md-6 col-xl-4">
+    <div class="prediction-card slide-in">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+            <div>
+                <h6 class="fw-bold mb-1">{{ s.name }}</h6>
+                <small class="text-muted">{{ s.code }} · {{ s.type }}</small>
+            </div>
+            <span class="risk-badge badge-risk {{ s.risk|lower }}">
+                <i class="bi bi-{% if s.risk == 'Low' %}check-circle{% elif s.risk == 'Medium' %}exclamation-triangle{% else %}x-octagon{% endif %}"></i>
+                {{ s.risk }}
+            </span>
+        </div>
+
+        <div class="d-flex align-items-center gap-3 mb-3">
+            <div class="text-center">
+                <div class="fs-5 fw-bold" style="color:var(--primary)">{{ s.attendance_pct }}%</div>
+                <small class="text-muted">Attendance</small>
+            </div>
+            <div class="text-center">
+                <div class="fs-5 fw-bold">{{ s.classes_attended }}</div>
+                <small class="text-muted">Attended</small>
+            </div>
+            <div class="text-center">
+                <div class="fs-5 fw-bold">{{ s.total_classes }}</div>
+                <small class="text-muted">Total</small>
+            </div>
+            {% if s.days_needed > 0 %}
+            <div class="text-center">
+                <div class="fs-5 fw-bold" style="color:var(--danger)">{{ s.days_needed }}</div>
+                <small class="text-muted">Days Needed</small>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="progress-custom mb-3">
+            <div class="bar {% if s.attendance_pct >= 75 %}green{% elif s.attendance_pct >= 60 %}yellow{% else %}red{% endif %}"
+                 style="width:{{ s.attendance_pct }}%"></div>
+        </div>
+
+        <div class="suggestion">
+            <i class="bi bi-robot me-1" style="color:var(--primary)"></i>
+            {{ s.message }}
+        </div>
+    </div>
+</div>
+{% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+renderRiskPie('riskPie', {{ predictions.low_risk_count }}, {{ predictions.medium_risk_count }}, {{ predictions.high_risk_count }});
+</script>
+{% endblock %}
