@@ -84,3 +84,8 @@ There are 35 parent accounts linked to the 35 sample students. The login format 
 - `ml_model.py`: Algorithms for attendance predictions and risk calculations.
 - `utils.py`: Helper functions for processing Excel uploads and generating PDFs.
 - `static/css/style.css`: The custom UI design system.
+
+
+
+cd SPMSV 
+source /Users/munna/Desktop/RBET/.venv/bin/activate
