@@ -15,91 +15,423 @@
         <div class="stat-card">
             <div class="stat-icon teal"><i class="bi bi-graph-up"></i></div>
             <div class="stat-value">{{ avg_attendance }}%</div>
-            <div class="stat-label">Avg Attendance</div>
+            <div class="stat-label">Average Attendance</div>
         </div>
     </div>
     <div class="col-md-6 col-xl-3">
         <div class="stat-card">
-            <div class="stat-icon orange"><i class="bi bi-exclamation-triangle-fill"></i></div>
-            <div class="stat-value">{{ low_att_count }}</div>
-            <div class="stat-label">Low Attendance</div>
+            <div class="stat-icon orange"><i class="bi bi-person-exclamation"></i></div>
+            <div class="stat-value">{{ attendance_risk_count }}</div>
+            <div class="stat-label">Attendance Risk (&lt;70%)</div>
         </div>
     </div>
     <div class="col-md-6 col-xl-3">
         <div class="stat-card">
-            <div class="stat-icon red"><i class="bi bi-bell-fill"></i></div>
-            <div class="stat-value">{{ total_alerts }}</div>
-            <div class="stat-label">Active Alerts</div>
+            <div class="stat-icon red"><i class="bi bi-journal-x"></i></div>
+            <div class="stat-value">{{ marks_risk_count }}</div>
+            <div class="stat-label">Marks Risk (&lt;50%)</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-lg-8">
+        <div class="card-custom slide-in">
+            <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <span><i class="bi bi-funnel-fill me-2" style="color:var(--primary)"></i>At-Risk Snapshot</span>
+                <div class="d-flex flex-wrap align-items-center gap-3">
+                    <label class="risk-filter-item mb-0"><input type="checkbox" id="filterAttendance"> Attendance risk</label>
+                    <label class="risk-filter-item mb-0"><input type="checkbox" id="filterMarks"> Marks risk</label>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="riskSummary" class="text-muted mb-3" style="font-size:0.85rem"></div>
+                <div id="riskSnapshotList" class="risk-student-grid"></div>
+                <p id="riskSnapshotEmpty" class="text-muted mb-0" style="display:none">No students match the selected filters.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card-custom slide-in insight-chart-card mb-4">
+            <div class="card-header"><i class="bi bi-easel2-fill me-2" style="color:var(--info)"></i>Classes Running by Subject</div>
+            <div class="card-body">
+                <div class="chart-canvas-wrap">
+                    <canvas id="classesBySubjectChart"></canvas>
+                    <div id="classesChartEmpty" class="chart-empty-state">No class records for this month.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-custom slide-in insight-chart-card">
+            <div class="card-header"><i class="bi bi-bar-chart-fill me-2" style="color:var(--danger)"></i>Low Marks by Subject</div>
+            <div class="card-body">
+                <div class="chart-canvas-wrap mb-3">
+                    <canvas id="lowMarksBySubjectChart"></canvas>
+                    <div id="lowMarksChartEmpty" class="chart-empty-state">No subjects below 50% for this month.</div>
+                </div>
+
+                <h6 class="mb-2">Low-Mark Reasons</h6>
+                <div class="chart-canvas-wrap reason-chart-wrap mb-3">
+                    <canvas id="lowMarkReasonsChart"></canvas>
+                    <div id="lowMarkReasonsEmpty" class="chart-empty-state">No absence reasons found for low-mark students this month.</div>
+                </div>
+
+                <h6 class="mb-2">Top Affected Students</h6>
+                <div id="topAffectedStudentsList" class="affected-student-list"></div>
+            </div>
         </div>
     </div>
 </div>
 
 <div class="row g-4">
-    <div class="col-lg-8">
+    <div class="col-lg-7">
         <div class="card-custom slide-in">
-            <div class="card-header"><i class="bi bi-people-fill me-2" style="color:var(--primary)"></i>Student Overview</div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table-custom" id="studentTable">
-                        <thead><tr><th>ID</th><th>Name</th><th>Attendance</th><th>Backlogs</th><th>Action</th></tr></thead>
-                        <tbody>
-                        {% for s in students %}
-                        <tr>
-                            <td><strong>{{ s.student_id }}</strong></td>
-                            <td>{{ s.name }}</td>
-                            <td>
-                                <div class="d-flex align-items-center gap-2">
-                                    <div class="progress-custom" style="width:80px">
-                                        <div class="bar {% if s.overall_attendance >= 75 %}green{% elif s.overall_attendance >= 60 %}yellow{% else %}red{% endif %}"
-                                             style="width:{{ s.overall_attendance }}%"></div>
-                                    </div>
-                                    <small>{{ s.overall_attendance }}%</small>
-                                </div>
-                            </td>
-                            <td>
-                                {% if s.active_backlogs_count > 0 %}
-                                <span class="badge-risk high">{{ s.active_backlogs_count }}</span>
-                                {% else %}
-                                <span class="badge-risk low">None</span>
-                                {% endif %}
-                            </td>
-                            <td><a href="{{ url_for('admin_student_detail', id=s.id) }}" class="btn btn-sm btn-primary-custom py-1 px-3">View</a></td>
-                        </tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <button class="btn btn-sm btn-outline-custom py-1 px-2" id="monthPrev" type="button"><i class="bi bi-chevron-left"></i></button>
+                <strong id="calendarMonthLabel"></strong>
+                <button class="btn btn-sm btn-outline-custom py-1 px-2" id="monthNext" type="button"><i class="bi bi-chevron-right"></i></button>
+            </div>
+            <div class="card-body">
+                <div class="calendar-weekdays">
+                    <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
                 </div>
+                <div id="dashboardCalendar" class="calendar-grid"></div>
+                <p class="text-muted mt-3 mb-0" style="font-size:0.82rem">
+                    Click a day to view attendance percentage, absence reasons, and risk slices.
+                </p>
             </div>
         </div>
     </div>
-    <div class="col-lg-4">
-        <div class="card-custom slide-in mb-4">
-            <div class="card-header"><i class="bi bi-bell-fill me-2" style="color:var(--danger)"></i>Recent Alerts</div>
-            <div class="card-body">
-                {% if recent_alerts %}
-                {% for alert in recent_alerts %}
-                <div class="alert-card {% if alert.alert_type == 'low_attendance' %}warning{% elif alert.alert_type == 'backlog_risk' %}danger{% else %}success{% endif %}">
-                    <div class="alert-icon">
-                        {% if alert.alert_type == 'low_attendance' %}<i class="bi bi-exclamation-triangle-fill" style="color:var(--warning)"></i>
-                        {% elif alert.alert_type == 'backlog_risk' %}<i class="bi bi-x-octagon-fill" style="color:var(--danger)"></i>
-                        {% else %}<i class="bi bi-info-circle-fill" style="color:var(--info)"></i>{% endif %}
-                    </div>
-                    <div class="alert-text">{{ alert.message }}<br><small class="text-muted">{{ alert.created_at.strftime('%d %b %Y') }}</small></div>
-                </div>
-                {% endfor %}
-                {% else %}
-                <p class="text-muted text-center py-3 mb-0"><i class="bi bi-check-circle me-2"></i>No active alerts</p>
-                {% endif %}
+
+    <div class="col-lg-5">
+        <div class="card-custom slide-in day-insight-card">
+            <div class="card-header">
+                <i class="bi bi-calendar-event me-2" style="color:var(--primary)"></i>
+                Day Insight: <span id="selectedDayLabel" class="ms-2"></span>
             </div>
-        </div>
-        <div class="card-custom slide-in">
-            <div class="card-header"><i class="bi bi-lightning-fill me-2" style="color:var(--warning)"></i>Quick Actions</div>
-            <div class="card-body d-grid gap-2">
-                <a href="{{ url_for('admin_upload') }}" class="btn btn-primary-custom"><i class="bi bi-cloud-arrow-up me-2"></i>Upload Data</a>
-                <a href="{{ url_for('admin_students') }}" class="btn btn-outline-custom"><i class="bi bi-search me-2"></i>Search Students</a>
-                <a href="{{ url_for('admin_reports') }}" class="btn btn-accent"><i class="bi bi-file-pdf me-2"></i>Generate Reports</a>
+            <div class="card-body">
+                <div class="row g-3 mb-3">
+                    <div class="col-6">
+                        <div class="mini-metric">
+                            <small>Attendance</small>
+                            <strong id="dayAttendancePct">0%</strong>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="mini-metric">
+                            <small>Total Classes</small>
+                            <strong id="dayTotalClasses">0</strong>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="mini-metric">
+                            <small>Present Students</small>
+                            <strong id="dayPresentStudents">0</strong>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="mini-metric">
+                            <small>Absent Students</small>
+                            <strong id="dayAbsentStudents">0</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="dayStatusBadge" class="badge-risk low mb-2">No Data</div>
+                <p id="dayStatusMessage" class="text-muted" style="font-size:0.85rem"></p>
+
+                <h6 class="mb-2">Top Absence Reasons</h6>
+                <div id="dayReasonsList" class="day-reason-list"></div>
+
+                <h6 class="mt-3 mb-2">Absent Students</h6>
+                <div id="dayAbsentList" class="day-absent-list"></div>
+
+                <div class="day-risk-slice mt-3">
+                    <span id="dayAttendanceRiskCount">0</span> attendance-risk students ·
+                    <span id="dayMarksRiskCount">0</span> marks-risk students
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+<div class="toast-container position-fixed top-0 end-0 p-3" id="riskToastContainer" style="z-index:1080"></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const riskSnapshot = {{ risk_snapshot | tojson }};
+const popupAlerts = {{ popup_alerts | tojson }};
+let currentMonth = "{{ selected_month }}";
+let selectedDate = "{{ selected_date }}";
+let monthSummary = {{ month_summary | tojson }};
+let insights = {{ month_insights | tojson }};
+let selectedDaySummary = {{ day_summary | tojson }};
+
+function escapeHtml(value) {
+    const div = document.createElement('div');
+    div.textContent = value || '';
+    return div.innerHTML;
+}
+
+function formatMonthLabel(monthValue) {
+    const [year, month] = monthValue.split('-').map(Number);
+    return new Date(year, month - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+}
+
+function getMonthMeta(monthValue) {
+    const [year, month] = monthValue.split('-').map(Number);
+    const first = new Date(year, month - 1, 1);
+    const firstWeekday = first.getDay();
+    const daysInMonth = new Date(year, month, 0).getDate();
+    return { year, month, firstWeekday, daysInMonth };
+}
+
+function setChartEmptyState(emptyId, show) {
+    const el = document.getElementById(emptyId);
+    if (!el) return;
+    el.style.display = show ? 'flex' : 'none';
+}
+
+function renderTopAffectedStudents(students) {
+    const listEl = document.getElementById('topAffectedStudentsList');
+    if (!students || !students.length) {
+        listEl.innerHTML = '<p class="text-muted mb-0" style="font-size:0.82rem">No low-mark students for this month.</p>';
+        return;
+    }
+
+    listEl.innerHTML = students.slice(0, 8).map(item => `
+        <div class="affected-student-item">
+            <div>
+                <strong>${escapeHtml(item.name)}</strong>
+                <div class="affected-subject">${escapeHtml(item.subject)} (${escapeHtml(item.subject_code)})</div>
+            </div>
+            <div class="text-end">
+                <span class="badge-risk high">${item.percentage}%</span>
+                <div class="affected-id">${escapeHtml(item.student_id)}</div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function renderInsightGraphs() {
+    const classesData = (insights && insights.classes_by_subject) ? insights.classes_by_subject : [];
+    const lowMarksData = (insights && insights.low_marks_by_subject) ? insights.low_marks_by_subject : [];
+    const reasonsData = (insights && insights.low_mark_reasons) ? insights.low_mark_reasons : [];
+
+    const hasClasses = renderSubjectClassesChart('classesBySubjectChart', classesData);
+    const hasLowMarks = renderLowMarksBySubjectChart('lowMarksBySubjectChart', lowMarksData);
+    const hasReasons = renderLowMarkReasonsChart('lowMarkReasonsChart', reasonsData);
+
+    setChartEmptyState('classesChartEmpty', !hasClasses);
+    setChartEmptyState('lowMarksChartEmpty', !hasLowMarks);
+    setChartEmptyState('lowMarkReasonsEmpty', !hasReasons);
+
+    renderTopAffectedStudents((insights && insights.top_affected_students) ? insights.top_affected_students : []);
+}
+
+function renderRiskSnapshot() {
+    const listEl = document.getElementById('riskSnapshotList');
+    const emptyEl = document.getElementById('riskSnapshotEmpty');
+    const summaryEl = document.getElementById('riskSummary');
+    const filterAttendance = document.getElementById('filterAttendance').checked;
+    const filterMarks = document.getElementById('filterMarks').checked;
+
+    const filtered = riskSnapshot.filter(item => {
+        if (filterAttendance && !item.attendance_risk) return false;
+        if (filterMarks && !item.marks_risk) return false;
+        return true;
+    });
+
+    summaryEl.textContent = `Showing ${filtered.length} of ${riskSnapshot.length} at-risk students.`;
+
+    if (!filtered.length) {
+        listEl.innerHTML = '';
+        emptyEl.style.display = 'block';
+        return;
+    }
+
+    emptyEl.style.display = 'none';
+    listEl.innerHTML = filtered.map(item => {
+        const marksText = item.low_mark_subjects.length
+            ? item.low_mark_subjects.slice(0, 2).map(s => `${s.subject} (${s.percentage}%)`).join(', ')
+            : 'No low marks subjects';
+
+        return `
+            <div class="risk-student-item">
+                <div>
+                    <h6>${item.name}</h6>
+                    <small>${item.student_id}</small>
+                    <div class="risk-subtext">Marks: ${marksText}</div>
+                </div>
+                <div class="text-end">
+                    <div class="d-flex gap-1 justify-content-end flex-wrap mb-2">
+                        ${item.attendance_risk ? '<span class="badge-risk high">Attendance</span>' : ''}
+                        ${item.marks_risk ? '<span class="badge-risk medium">Marks</span>' : ''}
+                    </div>
+                    <div class="fw-semibold" style="font-size:0.82rem">${item.attendance}% attendance</div>
+                    <a href="/admin/student/${item.id}" class="btn btn-sm btn-primary-custom py-1 px-2 mt-2">View</a>
+                </div>
+            </div>`;
+    }).join('');
+}
+
+function renderCalendar() {
+    const monthLabel = document.getElementById('calendarMonthLabel');
+    const grid = document.getElementById('dashboardCalendar');
+    monthLabel.textContent = formatMonthLabel(currentMonth);
+
+    const meta = getMonthMeta(currentMonth);
+    const summaryByDate = {};
+    (monthSummary.days || []).forEach(day => { summaryByDate[day.date] = day; });
+
+    let html = '';
+    for (let i = 0; i < meta.firstWeekday; i++) {
+        html += '<div class="calendar-cell is-empty"></div>';
+    }
+
+    for (let day = 1; day <= meta.daysInMonth; day++) {
+        const dateValue = `${meta.year}-${String(meta.month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const stats = summaryByDate[dateValue];
+        const pct = stats ? stats.attendance_pct : null;
+
+        let tone = 'neutral';
+        if (pct !== null) {
+            if (pct >= 70) tone = 'good';
+            else if (pct >= 40) tone = 'warn';
+            else tone = 'bad';
+        }
+
+        const selectedClass = dateValue === selectedDate ? 'is-selected' : '';
+        html += `
+            <button type="button" class="calendar-cell has-data-${tone} ${selectedClass}" data-date="${dateValue}">
+                <span class="day-num">${day}</span>
+                <span class="day-pct">${pct !== null ? `${pct}%` : '-'}</span>
+            </button>`;
+    }
+
+    grid.innerHTML = html;
+
+    grid.querySelectorAll('.calendar-cell[data-date]').forEach(cell => {
+        cell.addEventListener('click', () => {
+            selectedDate = cell.dataset.date;
+            renderCalendar();
+            loadDaySummary(selectedDate);
+        });
+    });
+}
+
+function getStatusBadge(status) {
+    if (status === 'very_low') return { cls: 'high', text: 'Very Low' };
+    if (status === 'low') return { cls: 'medium', text: 'Needs Action' };
+    if (status === 'healthy') return { cls: 'low', text: 'Healthy' };
+    return { cls: 'low', text: 'No Data' };
+}
+
+function renderDaySummary(summary) {
+    selectedDaySummary = summary;
+    const dateLabel = new Date(summary.date).toLocaleDateString('en-US', {
+        day: '2-digit', month: 'short', year: 'numeric'
+    });
+
+    document.getElementById('selectedDayLabel').textContent = dateLabel;
+    document.getElementById('dayAttendancePct').textContent = `${summary.attendance_pct}%`;
+    document.getElementById('dayTotalClasses').textContent = summary.total_classes;
+    document.getElementById('dayPresentStudents').textContent = summary.present_students;
+    document.getElementById('dayAbsentStudents').textContent = summary.absent_students;
+    document.getElementById('dayStatusMessage').textContent = summary.status_message;
+
+    const badge = getStatusBadge(summary.status);
+    const badgeEl = document.getElementById('dayStatusBadge');
+    badgeEl.className = `badge-risk ${badge.cls} mb-2`;
+    badgeEl.textContent = badge.text;
+
+    const reasonsList = document.getElementById('dayReasonsList');
+    const topReasons = summary.top_reasons || [];
+    reasonsList.innerHTML = topReasons.length
+        ? topReasons.map(r => `<div class="reason-item"><span>${escapeHtml(r.reason)}</span><strong>${r.count}</strong></div>`).join('')
+        : '<div class="text-muted" style="font-size:0.82rem">No absence reasons for this day.</div>';
+
+    const absentList = document.getElementById('dayAbsentList');
+    const absentStudents = summary.absent_students_list || [];
+    absentList.innerHTML = absentStudents.length
+        ? absentStudents.slice(0, 6).map(s => `<div class="absent-item"><strong>${escapeHtml(s.name)}</strong> <small>${escapeHtml(s.student_id)}</small><div>${escapeHtml(s.reason)}</div></div>`).join('')
+        : '<div class="text-muted" style="font-size:0.82rem">No absent students for this day.</div>';
+
+    document.getElementById('dayAttendanceRiskCount').textContent = summary.at_risk_slices.attendance.count;
+    document.getElementById('dayMarksRiskCount').textContent = summary.at_risk_slices.marks.count;
+}
+
+async function loadMonthSummary(monthValue) {
+    const response = await fetch(`/api/admin/attendance-calendar?month=${monthValue}`);
+    if (!response.ok) return;
+    const payload = await response.json();
+
+    monthSummary = payload;
+    insights = payload.insights || {
+        classes_by_subject: [],
+        low_marks_by_subject: [],
+        low_mark_reasons: [],
+        top_affected_students: []
+    };
+
+    const firstDataDay = (monthSummary.days || [])[0];
+    selectedDate = firstDataDay ? firstDataDay.date : `${monthValue}-01`;
+
+    renderCalendar();
+    renderInsightGraphs();
+    loadDaySummary(selectedDate);
+}
+
+async function loadDaySummary(dateValue) {
+    const response = await fetch(`/api/admin/attendance-day?date=${dateValue}`);
+    if (!response.ok) return;
+    const summary = await response.json();
+    renderDaySummary(summary);
+}
+
+function shiftMonth(delta) {
+    const [year, month] = currentMonth.split('-').map(Number);
+    const next = new Date(year, month - 1 + delta, 1);
+    currentMonth = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}`;
+    loadMonthSummary(currentMonth);
+}
+
+function renderToasts() {
+    const container = document.getElementById('riskToastContainer');
+    const items = popupAlerts.slice(0, 6);
+    if (!items.length) return;
+
+    container.innerHTML = items.map((item, index) => {
+        const toneClass = item.type === 'attendance' ? 'text-bg-warning' : 'text-bg-danger';
+        return `
+            <div class="toast ${toneClass}" role="alert" aria-live="assertive" aria-atomic="true" data-delay="7000" data-index="${index}">
+                <div class="toast-header">
+                    <i class="bi bi-bell-fill me-2"></i>
+                    <strong class="me-auto">${item.title}</strong>
+                    <small>Now</small>
+                    <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+                <div class="toast-body">${item.message}</div>
+            </div>`;
+    }).join('');
+
+    container.querySelectorAll('.toast').forEach((toastEl, index) => {
+        const toast = new bootstrap.Toast(toastEl, { delay: 7000 });
+        setTimeout(() => toast.show(), 350 * index);
+    });
+}
+
+document.getElementById('filterAttendance').addEventListener('change', renderRiskSnapshot);
+document.getElementById('filterMarks').addEventListener('change', renderRiskSnapshot);
+document.getElementById('monthPrev').addEventListener('click', () => shiftMonth(-1));
+document.getElementById('monthNext').addEventListener('click', () => shiftMonth(1));
+
+renderRiskSnapshot();
+renderCalendar();
+renderInsightGraphs();
+renderDaySummary(selectedDaySummary);
+renderToasts();
+</script>
 {% endblock %}

@@ -53,6 +53,9 @@ class Student(db.Model):
 
     # Relationships
     attendances = db.relationship("Attendance", backref="student", lazy="dynamic", cascade="all, delete-orphan")
+    daily_attendance_records = db.relationship(
+        "DailyAttendance", backref="student", lazy="dynamic", cascade="all, delete-orphan"
+    )
     marks = db.relationship("Marks", backref="student", lazy="dynamic", cascade="all, delete-orphan")
     backlogs = db.relationship("Backlog", backref="student", lazy="dynamic", cascade="all, delete-orphan")
     alerts = db.relationship("Alert", backref="student", lazy="dynamic", cascade="all, delete-orphan")
@@ -85,6 +88,7 @@ class Subject(db.Model):
 
     # Relationships
     attendances = db.relationship("Attendance", backref="subject", lazy="dynamic")
+    daily_attendance_records = db.relationship("DailyAttendance", backref="subject", lazy="dynamic")
     marks_records = db.relationship("Marks", backref="subject", lazy="dynamic")
     backlogs_records = db.relationship("Backlog", backref="subject", lazy="dynamic")
 
@@ -110,6 +114,27 @@ class Attendance(db.Model):
             self.percentage = round((self.classes_attended / self.total_classes) * 100, 2)
         else:
             self.percentage = 0.0
+
+
+class DailyAttendance(db.Model):
+    """Date-wise attendance log per student per subject."""
+    __tablename__ = "daily_attendance"
+
+    id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey("students.id"), nullable=False)
+    subject_id = db.Column(db.Integer, db.ForeignKey("subjects.id"), nullable=False)
+    date = db.Column(db.Date, nullable=False, index=True)
+    status = db.Column(db.String(10), nullable=False)  # Present / Absent
+    reason = db.Column(db.String(255), nullable=True)
+    classes_count = db.Column(db.Integer, default=1)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "student_id", "subject_id", "date", name="uq_daily_attendance_student_subject_date"
+        ),
+    )
 
 
 class Marks(db.Model):
@@ -157,7 +182,7 @@ class Alert(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     student_id = db.Column(db.Integer, db.ForeignKey("students.id"), nullable=False)
-    alert_type = db.Column(db.String(30), nullable=False)  # 'low_attendance', 'backlog_risk', 'performance_drop'
+    alert_type = db.Column(db.String(30), nullable=False)  # low_attendance, marks_risk, backlog_risk, performance_drop
     message = db.Column(db.String(500), nullable=False)
     is_read = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

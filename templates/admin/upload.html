@@ -11,10 +11,14 @@
                 <form method="POST" enctype="multipart/form-data" id="uploadForm">
                     <div class="mb-4">
                         <label class="form-label fw-semibold">Data Type</label>
-                        <div class="d-flex gap-3">
+                        <div class="d-flex gap-3 flex-wrap">
                             <div class="form-check">
-                                <input class="form-check-input" type="radio" name="upload_type" id="typeAttendance" value="attendance" checked>
-                                <label class="form-check-label" for="typeAttendance"><i class="bi bi-calendar-check me-1"></i>Attendance</label>
+                                <input class="form-check-input" type="radio" name="upload_type" id="typeAttendanceDaily" value="attendance_daily" checked>
+                                <label class="form-check-label" for="typeAttendanceDaily"><i class="bi bi-calendar2-week me-1"></i>Daily Attendance</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="upload_type" id="typeAttendance" value="attendance">
+                                <label class="form-check-label" for="typeAttendance"><i class="bi bi-calendar-check me-1"></i>Aggregate Attendance</label>
                             </div>
                             <div class="form-check">
                                 <input class="form-check-input" type="radio" name="upload_type" id="typeMarks" value="marks">
@@ -40,13 +44,23 @@
         <div class="card-custom slide-in mb-4">
             <div class="card-header"><i class="bi bi-info-circle-fill me-2" style="color:var(--info)"></i>Expected Format</div>
             <div class="card-body">
-                <h6 class="fw-bold mb-2"><i class="bi bi-calendar-check me-1 text-success"></i> Attendance File</h6>
+                <h6 class="fw-bold mb-2"><i class="bi bi-calendar2-week me-1 text-success"></i> Daily Attendance File</h6>
+                <div class="table-responsive mb-3">
+                    <table class="table table-sm table-bordered" style="font-size:0.8rem">
+                        <thead class="table-light"><tr><th>StudentID</th><th>Name</th><th>Date</th><th>Subject</th><th>Status</th><th>Reason</th><th>ClassesCount</th></tr></thead>
+                        <tbody><tr><td>CSBS001</td><td>Arun</td><td>2026-05-01</td><td>Machine Learning</td><td>Absent</td><td>Medical Leave</td><td>1</td></tr></tbody>
+                    </table>
+                </div>
+                <small class="text-muted d-block mb-3">Use <strong>Present</strong> or <strong>Absent</strong> in Status. Reason is required when Status is Absent.</small>
+
+                <h6 class="fw-bold mb-2"><i class="bi bi-calendar-check me-1 text-primary"></i> Aggregate Attendance File (Legacy)</h6>
                 <div class="table-responsive mb-3">
                     <table class="table table-sm table-bordered" style="font-size:0.8rem">
                         <thead class="table-light"><tr><th>StudentID</th><th>Name</th><th>Subject</th><th>TotalClasses</th><th>ClassesAttended</th></tr></thead>
                         <tbody><tr><td>CSBS001</td><td>Arun</td><td>Machine Learning</td><td>90</td><td>78</td></tr></tbody>
                     </table>
                 </div>
+
                 <h6 class="fw-bold mb-2"><i class="bi bi-journal-check me-1 text-primary"></i> Marks File</h6>
                 <div class="table-responsive">
                     <table class="table table-sm table-bordered" style="font-size:0.8rem">

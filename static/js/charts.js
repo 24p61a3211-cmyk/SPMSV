@@ -229,3 +229,175 @@ function renderRiskPie(canvasId, low, medium, high) {
     }
   });
 }
+
+function destroyChartIfExists(canvasId) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const existing = Chart.getChart(canvas);
+  if (existing) existing.destroy();
+}
+
+function renderSubjectClassesChart(canvasId, data) {
+  const ctx = document.getElementById(canvasId);
+  if (!ctx) return false;
+  destroyChartIfExists(canvasId);
+  if (!data || !data.length) return false;
+
+  const labels = data.map(d => d.subject.length > 14 ? d.subject.substring(0, 14) + '…' : d.subject);
+  const values = data.map(d => d.total_classes);
+
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Classes',
+        data: values,
+        backgroundColor: 'rgba(66, 165, 245, 0.82)',
+        borderColor: '#42a5f5',
+        borderWidth: 1,
+        borderRadius: 8,
+        borderSkipped: false,
+        barThickness: 26,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1a1a2e',
+          cornerRadius: 8,
+          padding: 12,
+          callbacks: {
+            label: function(ctx) {
+              return `${ctx.raw} classes`;
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: { color: 'rgba(0,0,0,0.05)' },
+          ticks: { precision: 0, font: { family: 'Inter', size: 11 } }
+        },
+        x: {
+          grid: { display: false },
+          ticks: { font: { family: 'Inter', size: 10 } }
+        }
+      },
+      animation: { duration: 1100, easing: 'easeOutQuart' }
+    }
+  });
+
+  return true;
+}
+
+function renderLowMarksBySubjectChart(canvasId, data) {
+  const ctx = document.getElementById(canvasId);
+  if (!ctx) return false;
+  destroyChartIfExists(canvasId);
+  if (!data || !data.length) return false;
+
+  const labels = data.map(d => d.subject.length > 14 ? d.subject.substring(0, 14) + '…' : d.subject);
+  const values = data.map(d => d.students_count);
+
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Low-mark students',
+        data: values,
+        backgroundColor: 'rgba(255, 107, 107, 0.82)',
+        borderColor: '#ff6b6b',
+        borderWidth: 1,
+        borderRadius: 8,
+        borderSkipped: false,
+        barThickness: 24,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1a1a2e',
+          cornerRadius: 8,
+          padding: 12,
+          callbacks: {
+            label: function(ctx) {
+              return `${ctx.raw} students below 50%`;
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: { color: 'rgba(0,0,0,0.05)' },
+          ticks: { precision: 0, font: { family: 'Inter', size: 11 } }
+        },
+        x: {
+          grid: { display: false },
+          ticks: { font: { family: 'Inter', size: 10 } }
+        }
+      },
+      animation: { duration: 1100, easing: 'easeOutQuart' }
+    }
+  });
+
+  return true;
+}
+
+function renderLowMarkReasonsChart(canvasId, data) {
+  const ctx = document.getElementById(canvasId);
+  if (!ctx) return false;
+  destroyChartIfExists(canvasId);
+  if (!data || !data.length) return false;
+
+  const labels = data.map(d => d.reason.length > 20 ? d.reason.substring(0, 20) + '…' : d.reason);
+  const values = data.map(d => d.count);
+  const colors = getChartColors(labels.length);
+  const borders = getBorderColors(labels.length);
+
+  new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: values,
+        backgroundColor: colors,
+        borderColor: borders,
+        borderWidth: 1,
+        cutout: '62%',
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { font: { family: 'Inter', size: 10 }, usePointStyle: true, padding: 10 }
+        },
+        tooltip: {
+          backgroundColor: '#1a1a2e',
+          cornerRadius: 8,
+          padding: 10,
+          callbacks: {
+            label: function(ctx) {
+              return `${ctx.label}: ${ctx.raw}`;
+            }
+          }
+        }
+      },
+      animation: { duration: 1100 }
+    }
+  });
+
+  return true;
+}
